@@ -231,7 +231,7 @@ func initGPSSerial() bool {
 	}
 	// Possible baud rates for this device. We will try to auto detect the correct one
 	baudrates := []int{int(9600)}
-	isSirfIV := bool(false)
+	// isSirfIV := bool(false)
 	globalStatus.GPS_detected_type = 0 // reset detected type on each initialization
 	detectedTracker = nil
 
@@ -266,6 +266,10 @@ func initGPSSerial() bool {
 				globalStatus.GPS_detected_type = GPS_TYPE_UBX_GEN
 				logChipConfig("man", "generic ublox", device, targetBaudRate, "")
 				break;
+			case "sim7600x":
+				globalStatus.GPS_detected_type = GPS_TYPE_SIM7600X
+				logChipConfig("man", "sim7600x NMEA", device, targetBaudRate, "")
+				break;
 			default:
 				globalStatus.GPS_detected_type = GPS_TYPE_ANY
 				logInf("GPS - configuring gps chip as other -> no further configuration will be done, use gps as it is")
@@ -295,7 +299,6 @@ func initGPSSerial() bool {
 
 	} else if _, err := os.Stat("/dev/prolific0"); err == nil { // Assume it's a BU-353-S4 SIRF IV.
 		//TODO: Check a "serialout" flag and/or deal with multiple prolific devices.
-		isSirfIV = true
 		// default to 4800 for SiRFStar config port, we then change and detect it with 38400.
 		// We also try 9600 just in case this is something else, as this is the most popular value
 		baudrates = []int{4800, 38400, 9600}
@@ -309,6 +312,10 @@ func initGPSSerial() bool {
  	} else if _, err := os.Stat("/dev/softrf_dongle"); err == nil {
 		device = "/dev/softrf_dongle"
 		globalStatus.GPS_detected_type = GPS_TYPE_SOFTRF_DONGLE
+		baudrates[0] = 115200
+	} else if _, err := os.Stat("/dev/ttyUSB3"); err == nil {
+		device = "/dev/ttyUSB3"
+		globalStatus.GPS_detected_type = GPS_TYPE_SIM7600X
 		baudrates[0] = 115200
  	} else if _, err := os.Stat("/dev/serial0"); err == nil { 
 		// ttyS0 is PL011 UART (GPIO pins 8 and 10) on all RPi.
@@ -337,7 +344,7 @@ func initGPSSerial() bool {
 	}
 	baudChanged := false
 
-	if isSirfIV {
+	if globalStatus.GPS_detected_type == GPS_TYPE_PROLIFIC { //Replace isSirfIV
 		log.Printf("Using SiRFIV config.\n")
 
 		// Enable 5Hz. (To switch back to 1Hz: $PSRF103,00,7,00,0*22)
@@ -359,6 +366,31 @@ func initGPSSerial() bool {
 		if globalSettings.DEBUG {
 			log.Printf("Finished writing SiRF GPS config to %s. Opening port to test connection.\n", device)
 		}
+	} else if globalStatus.GPS_detected_type == GPS_TYPE_SIM7600X {
+		//The SIM7600 needs to be poked via AT command to the modem
+		logDbg("GPS - Configuring the SIM7600X Modem\n")
+		serialConfig := &serial.Config{Name: "/dev/ttyUSB2", Baud: 115200, ReadTimeout: time.Millisecond * 2500}
+		m, err := serial.OpenPort(serialConfig)
+		if err != nil {
+			log.Printf("GPS - Couldn't open STM7600X Modem: %s\n", err.Error())
+			return false
+		}
+
+		//To configure:
+		// 1) Close any open GPS session
+		// 2) Set the output port
+		// 3) Set the desired out sentences
+		// 4) Configure for 10Hz
+		// 5) Start session
+		// 6) Enable data stream
+		m.Write([]byte("AT+CGPS=0\r\n"))
+		m.Write([]byte("AT+CGPSNMEAPORTCFG=3\r\n"))
+		m.Write([]byte("AT+CGPSNMEA=197119\r\n"))
+		m.Write([]byte("AT+CGPSNMEARATE=1\r\n"))
+		m.Write([]byte("AT+CGPS=1\r\n"))
+		m.Write([]byte("AT+CGPSINFOCFG=1,31\r\n"))
+
+		m.Close()
 	} else if (
 		globalStatus.GPS_detected_type == GPS_TYPE_UBX6or7  ||
 	    globalStatus.GPS_detected_type == GPS_TYPE_UBX8  	|| 

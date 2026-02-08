@@ -301,7 +301,7 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 		$scope.GPS_Enabled = settings.GPS_Enabled;
 		$scope.GpsManualConfig = settings.GpsManualConfig;
 		$scope.GpsManualDevice = settings.GpsManualDevice;
-		$scope.GpsManualChips = ['ublox6', 'ublox7', 'ublox8', 'ublox9', 'ublox10', 'ublox', 'other'];
+		$scope.GpsManualChips = ['ublox6', 'ublox7', 'ublox8', 'ublox9', 'ublox10', 'ublox', 'sim7600x', 'other'];
 		$scope.GpsManualChip = settings.GpsManualChip;
 		$scope.GpsManualTargetBauds = [9600, 115200, 19200, 38400, 57600, 230400, 460800, 921600];
 		$scope.GpsManualTargetBaud = settings.GpsManualTargetBaud;
