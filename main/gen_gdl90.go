@@ -1477,6 +1477,10 @@ func changeRegionSettings() {
 			globalSettings.UAT_Enabled = false
 			globalSettings.OGN_Enabled = true
 			globalSettings.DeveloperMode = true
+		case 3: // Canada settings
+			globalSettings.UAT_Enabled = false
+			globalSettings.OGN_Enabled = false
+			globalSettings.DeveloperMode = false
 		default:	// Nothing selected
 
 	}

@@ -323,6 +323,9 @@ func handleRegionGet(w http.ResponseWriter, r *http.Request) {
 	case 2:
 		RegionSettings.IsSet = true
 		RegionSettings.Region = "EU"
+	case 3:
+		RegionSettings.IsSet = true
+		RegionSettings.Region = "Canada"
 	default:
 		RegionSettings.IsSet = false
 	}
@@ -366,8 +369,8 @@ func handleRegionSet(w http.ResponseWriter, r *http.Request) {
 							globalSettings.RegionSelected = 1
 						} else if val == "EU" {
 							globalSettings.RegionSelected = 2
-						} else {
-							globalSettings.RegionSelected = 0
+						} else if val == "Canada" {
+							globalSettings.RegionSelected = 3
 						}
 						changeRegionSettings()
 					default:
