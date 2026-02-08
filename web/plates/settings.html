@@ -263,6 +263,7 @@
                                 <option value="0" ng-selected="WiFiMode=='0'">AccessPoint</option>
                                 <option value="1" ng-selected="WiFiMode=='1'">WiFi-Direct</option>
                                 <option value="2" ng-selected="WiFiMode=='2'">AP+Client</option>
+                                <option value="3" ng-selected="WiFiMode=='3'">AP+LTE</option>
                             </select>
                         </div>
                         <div class="form-group reset-flow">
@@ -332,7 +333,12 @@
                             </div>
                             <hr>
                         </div>
-
+                        <div ng-show="WiFiMode=='3'">
+                            <div class="form-group reset-flow">
+                                <label class="control-label col-xs-5">LTE APN</label>
+                                <input class="col-xs-7" type="text" lte-apn-input ng-model="LTEAPN"/>
+                            </div>
+                        </div>
                         <div class="form-group reset-flow">
                             <button class="btn btn-primary btn-block" ng-click="updateWiFi()">Submit WiFi
                                 Changes</button>
@@ -716,6 +722,7 @@
                         <p ng-if="WiFiMode==1">WiFi-Direct PIN: <b>{{WiFiDirectPin}}</b></p>
                         <p>WiFi Channel: <b>{{WiFiChannel}}</b></p>
                         <p>Stratux IP: <b>{{WiFiIPAddress}}</b></p>
+                        <p ng-if="WiFiMode==3">LTE APN: <b>{{LTEAPN}}</b></p>
                         <p>Your Stratux's WiFi services are now restarting to apply the new settings. This could
                             take up to 30 seconds.<br />
                             You might have to reconnect to your new WiFi SSID. </p>

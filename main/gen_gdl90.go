@@ -1231,6 +1231,8 @@ type settings struct {
 	WiFiClientNetworks   []wifiClientNetwork
 	WiFiInternetPassThroughEnabled bool
 
+	LTEAPN        		 string
+
 	EstimateBearinglessDist bool
 	RadarLimits          int
 	RadarRange           int

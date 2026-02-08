@@ -732,7 +732,8 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 				"WiFiMode" : parseInt($scope.WiFiMode),
 				"WiFiDirectPin": $scope.WiFiDirectPin,
 				"WiFiClientNetworks": $scope.WiFiClientNetworks,
-				"WiFiInternetPassThroughEnabled": $scope.WiFiInternetPassThroughEnabled
+				"WiFiInternetPassThroughEnabled": $scope.WiFiInternetPassThroughEnabled,
+				"LTEAPN": $scope.LTEAPN
 			};
 
 			// console.log(angular.toJson(newsettings));
@@ -748,6 +749,7 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 			case 0: return "AP";
 			case 1: return "WiFi-Direct";
 			case 2: return "AP+Client";
+			case 3: return "AP+LTE";
 		}
 		return "???";
 	}
