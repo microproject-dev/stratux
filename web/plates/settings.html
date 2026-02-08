@@ -359,7 +359,27 @@
                             <ui-switch ng-model='GPS_Enabled' settings-change></ui-switch>
                         </div>
                     </div>
-
+                    <div class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Manual Config</label>
+                        <div class="col-xs-7">
+                            <ui-switch ng-model='GpsManualConfig' settings-change></ui-switch>
+                        </div>
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Device</label>
+                        <input class="col-xs-7" type="text" ng-model="GpsManualDevice" ng-blur="updateGPSDevice()"
+                            placeholder="/dev/ttyAMA0" />
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Chipset</label>
+                        <select id="GpsManualChip" class="input col-xs-7 form-control-sm" ng-model="GpsManualChip"
+                            ng-options="x for x in GpsManualChips" ng-blur="updateGPSChip()"></select>
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Target Baud</label>
+                        <select id="GpsManualTargetBaud" class="input col-xs-7 form-control-sm" ng-model="GpsManualTargetBaud"
+                            ng-options="x for x in GpsManualTargetBauds" ng-blur="updateGPSBaud()"></select>
+                    </div>
                     <div class="form-group reset-flow">
                         <label class="control-label col-xs-5">978 Mhz (UAT)</label>
                         <div class="col-xs-7">

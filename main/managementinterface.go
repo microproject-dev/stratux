@@ -433,6 +433,14 @@ func handleSettingsSetRequest(w http.ResponseWriter, r *http.Request) {
 						globalSettings.OGNI2CTXEnabled = val.(bool)
 					case "GPS_Enabled":
 						globalSettings.GPS_Enabled = val.(bool)
+					case "GpsManualConfig":
+						globalSettings.GpsManualConfig = val.(bool)
+					case "GpsManualDevice":
+						globalSettings.GpsManualDevice = val.(string)
+					case "GpsManualChip":
+						globalSettings.GpsManualChip = val.(string)
+					case "GpsManualTargetBaud":
+						globalSettings.GpsManualTargetBaud = int(val.(float64))
 					case "IMU_Sensor_Enabled":
 						globalSettings.IMU_Sensor_Enabled = val.(bool)
 						if !globalSettings.IMU_Sensor_Enabled && globalStatus.IMUConnected {
@@ -589,7 +597,7 @@ func handleSettingsSetRequest(w http.ResponseWriter, r *http.Request) {
 						reconfigureFancontrol = true
 
 					default:
-						log.Printf("handleSettingsSetRequest:json: unrecognized key:%s\n", key)
+						log.Printf("handleSettingsSetRequest:json: unrecognized key: \"%s\"\n", key)
 					}
 				}
 				saveSettings()
