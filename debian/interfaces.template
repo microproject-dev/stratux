@@ -19,7 +19,7 @@ iface ap0 inet static
 
 
 
-{{if eq .WiFiMode 0}}
+{{if or (eq .WiFiMode 0) (eq .WiFiMode 3)}}
 # Pure AP mode
 iface wlan0 inet manual
   pre-up ifdown ap0; ifconfig ap0 down; iw ap0 del || true
@@ -55,8 +55,6 @@ iface default inet dhcp
 {{if eq .WiFiMode 3}}
 # AP+LTE mode
 iface usb0 inet dhcp
-  pre-up ifdown ap0; ifconfig ap0 down; iw ap0 del || true
-  pre-up iw phy0 interface add ap0 type __ap; ifup ap0
   # Enable routing
   {{if .WiFiInternetPassThroughEnabled}}
   pre-up echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -66,11 +64,6 @@ iface usb0 inet dhcp
   {{else}}
   pre-up echo 0 > /proc/sys/net/ipv4/ip_forward
   {{end}}
-  wireless-power off
-  post-down ifdown ap0; ifconfig ap0 down; iw ap0 del
-
-# pseudo iface triggered by wpa_supplicant
-iface default inet dhcp
 {{end}}
 
 {{if eq .WiFiMode 1}}
