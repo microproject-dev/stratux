@@ -49,7 +49,7 @@ www:
 ogn/ddb.json:
 	cd ogn && ./fetch_ddb.sh
 
-optinstall: www ogn/ddb.json
+optinstall: www ogn/ddb.json stratuxrun
 	mkdir -p $(STRATUX_HOME)/bin
 	mkdir -p $(STRATUX_HOME)/www
 	mkdir -p $(STRATUX_HOME)/ogn
