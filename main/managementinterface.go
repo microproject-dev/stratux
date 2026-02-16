@@ -595,8 +595,10 @@ func handleSettingsSetRequest(w http.ResponseWriter, r *http.Request) {
 					case "PWMDutyMin":
 						globalSettings.PWMDutyMin = int(val.(float64))
 						reconfigureFancontrol = true
-					case "LTEAPN":
-						globalSettings.LTEAPN = val.(string)
+					case "LTE_Enabled":
+						globalSettings.LTE_Enabled = val.(bool)
+					case "LTE_APN":
+						globalSettings.LTE_APN = val.(string)
 
 					default:
 						log.Printf("handleSettingsSetRequest:json: unrecognized key: \"%s\"\n", key)

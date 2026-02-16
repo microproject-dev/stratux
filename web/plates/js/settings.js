@@ -261,7 +261,7 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 	$scope.$parent.helppage = 'plates/settings-help.html';
 
 	var toggles = ['UAT_Enabled', 'ES_Enabled', 'OGN_Enabled', 'AIS_Enabled', 'APRS_Enabled', 'Ping_Enabled', 'Pong_Enabled', 'OGNI2CTXEnabled', 'GPS_Enabled', 'GpsManualConfig', 'IMU_Sensor_Enabled',
-		'BMP_Sensor_Enabled', 'DisplayTrafficSource', 'DEBUG', 'ReplayLog', 'TraceLog', 'AHRSLog', 'PersistentLogging', 'GDL90MSLAlt_Enabled', 'EstimateBearinglessDist', 'DarkMode'];
+		'BMP_Sensor_Enabled', 'DisplayTrafficSource', 'DEBUG', 'ReplayLog', 'TraceLog', 'AHRSLog', 'PersistentLogging', 'GDL90MSLAlt_Enabled', 'EstimateBearinglessDist', 'DarkMode', 'LTE_Enabled'];
 
 	var settings = {};
 	for (var i = 0; i < toggles.length; i++) {
@@ -350,6 +350,9 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 		$scope.OGNTxPower = settings.OGNTxPower;
 
 		$scope.PWMDutyMin = settings.PWMDutyMin;
+
+		$scope.LTE_Enabled = settings.LTE_Enabled;
+		$scope.LTE_APN = settings.LTE_APN;
 
 		// Update theme
 		$scope.$parent.updateTheme($scope.DarkMode);
@@ -553,6 +556,18 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 		}
 	};
 
+	$scope.updateLTEAPN = function () {
+		settings["LTE_APN"] = 0;
+		if ($scope.GpsManualTargetBaud !== settings["LTE_APN"]) {
+			settings["LTE_APN"] = $scope.LTE_APN;
+			var newsettings = {
+				"LTE_APN": settings["LTE_APN"]
+			};
+			// console.log(angular.toJson(newsettings));
+			setSettings(angular.toJson(newsettings));
+		}
+	};
+
 	$scope.postShutdown = function () {
 		$window.location.href = "/";
 		$location.path('/home');
@@ -733,7 +748,6 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 				"WiFiDirectPin": $scope.WiFiDirectPin,
 				"WiFiClientNetworks": $scope.WiFiClientNetworks,
 				"WiFiInternetPassThroughEnabled": $scope.WiFiInternetPassThroughEnabled,
-				"LTEAPN": $scope.LTEAPN
 			};
 
 			// console.log(angular.toJson(newsettings));
