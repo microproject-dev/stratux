@@ -3,11 +3,13 @@ name: CI
 on:
   # Run on pull requests
   pull_request:
+    branches:
+      - main
 
   # and pushes to main
   push:
     branches:
-      - master
+      - develop
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
