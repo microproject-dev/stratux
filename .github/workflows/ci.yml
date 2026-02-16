@@ -5,10 +5,6 @@ on:
   pull_request:
     branches:
       - main
-
-  # and pushes to main
-  push:
-    branches:
       - develop
 
   # Allows you to run this workflow manually from the Actions tab
