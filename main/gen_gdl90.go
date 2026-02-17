@@ -1321,6 +1321,13 @@ type status struct {
 
 	OGNPrevRandomAddr                          string    // when OGN is in random stealth mode, it's ID changes randomly - keep the previous one so we can filter properly
 	Pong_Heartbeats                            int64     // Pong heartbeat counter
+
+	LTE_Network								   string
+	LTE_SignalStrength						   string
+	LTE_Mode								   string
+	LTE_ICCID								   string
+	LTE_SPN									   string
+	LTE_IMEI								   string
 }
 
 var globalSettings settings
@@ -1834,6 +1841,9 @@ func main() {
 	// Guesses barometric altitude if we don't have our own baro source by using GnssBaroDiff from other traffic at similar altitude
 	go baroAltGuesser()
 	go cotListen()
+
+	// Initialize LTE modem
+	initLTE()
 
 	// Monitor RPi CPU temp.
 	globalStatus.CPUTempMin = common.InvalidCpuTemp
