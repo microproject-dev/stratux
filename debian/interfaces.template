@@ -61,6 +61,8 @@ iface wlan0 inet manual
   wireless-power off
   post-down ifdown ap0; ifconfig ap0 down; iw ap0 del
 
+allow-hotplug usb0
+
 iface usb0 inet dhcp
   # Enable routing
   {{if .WiFiInternetPassThroughEnabled}}
