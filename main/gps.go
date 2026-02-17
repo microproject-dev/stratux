@@ -366,31 +366,6 @@ func initGPSSerial() bool {
 		if globalSettings.DEBUG {
 			log.Printf("Finished writing SiRF GPS config to %s. Opening port to test connection.\n", device)
 		}
-	} else if globalStatus.GPS_detected_type == GPS_TYPE_SIM7600X {
-		//The SIM7600 needs to be poked via AT command to the modem
-		logDbg("GPS - Configuring the SIM7600X Modem\n")
-		serialConfig := &serial.Config{Name: "/dev/ttyUSB2", Baud: 115200, ReadTimeout: time.Millisecond * 2500}
-		m, err := serial.OpenPort(serialConfig)
-		if err != nil {
-			log.Printf("GPS - Couldn't open STM7600X Modem: %s\n", err.Error())
-			return false
-		}
-
-		//To configure:
-		// 1) Close any open GPS session
-		// 2) Set the output port
-		// 3) Set the desired out sentences
-		// 4) Configure for 10Hz
-		// 5) Start session
-		// 6) Enable data stream
-		m.Write([]byte("AT+CGPS=0\r\n"))
-		m.Write([]byte("AT+CGPSNMEAPORTCFG=3\r\n"))
-		m.Write([]byte("AT+CGPSNMEA=197119\r\n"))
-		m.Write([]byte("AT+CGPSNMEARATE=1\r\n"))
-		m.Write([]byte("AT+CGPS=1\r\n"))
-		m.Write([]byte("AT+CGPSINFOCFG=1,31\r\n"))
-
-		m.Close()
 	} else if (
 		globalStatus.GPS_detected_type == GPS_TYPE_UBX6or7  ||
 	    globalStatus.GPS_detected_type == GPS_TYPE_UBX8  	|| 
