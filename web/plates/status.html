@@ -194,6 +194,37 @@
 						<span class="col-xs-7">{{OGN_messages_total}}</span>
 					</div>
 				</div>
+				<div class="separator"></div>
+				<div ng-class="{'section_invisible': !visible_lte}">
+					<div class="row">
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>Sim Provider</strong></span>
+							<span class="col-xs-7">{{LTE_SPN}}</span>
+						</div>
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>ICCID</strong></span>
+							<span class="col-xs-7">{{LTE_ICCID}}</span>
+						</div>
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>Baseband IMEI</strong></span>
+							<span class="col-xs-7">{{LTE_IMEI}}</span>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>Baseband Mode</strong></span>
+							<span class="col-xs-7">{{LTE_Mode}}</span>
+						</div>
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>Baseband Network</strong></span>
+							<span class="col-xs-7">{{LTE_Network}}</span>
+						</div>
+						<div class="col-sm-4 label_adj">
+							<span class="col-xs-5"><strong>Baseband Signal Strength</strong></span>
+							<span class="col-xs-7">{{LTE_SignalStrength}} dBm</span>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>	
 	</div>
