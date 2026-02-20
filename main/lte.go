@@ -32,7 +32,7 @@ func waitForPort() (atmodem, error) {
 
 	serialConfig := &serial.Config{Name: "/dev/ttyUSB2", Baud: 115200, ReadTimeout: time.Millisecond * 2500}
 
-	log.Printf("Attempting to open modem")
+	log.Printf("LTE - Attempting to open modem")
 	for {
 		<- timer.C
 		
@@ -55,19 +55,24 @@ func atCommandExchange(modem atmodem, cmdstring string) ([]string, error) {
 
 	var data []string
 	
+	resp_started := false
 	for modem.scanner.Scan() {
-		msg := modem.scanner.Text()
-		log.Printf("msg: \"%s\"\n", msg)
-		if msg == "OK" {
+		msg := strings.TrimSpace(modem.scanner.Text())
+		if msg == cmdstring {
+			resp_started = true
+		} else if msg == "OK" {
 			return data, nil
 		} else if msg == "ERROR" {
+			log.Printf("LTE - cmd: \"%s\" failed\n", cmdstring)
 			return data, errors.New("modem reported error")
-		} else {
+		} else if resp_started {
 			data = append(data, msg)
+		} else {
+			//Ignore none response lines.
 		}
 	}
 	if err := modem.scanner.Err(); err != nil {
-		log.Printf("Error reading modem: %s\n", err.Error())
+		log.Printf("LTE -  Error reading modem: %s\n", err.Error())
 		return data, errors.New("modem read error")
 	}
 	return data, errors.New("modem exchange unknown termination")
@@ -76,22 +81,23 @@ func atCommandExchange(modem atmodem, cmdstring string) ([]string, error) {
 func waitForBoot(modem atmodem) {
 	timer := time.NewTicker(4 * time.Second)
 
-	log.Printf("Polling modem for responsivity")
+	log.Printf("LTE - Polling modem for responsivity")
 	for {
 		<- timer.C
 
 		_, err := atCommandExchange(modem, "AT")
 
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		} else {
 			return
 		}
 	}
+	log.Printf("LTE - Modem online")
 }
 
 func initLTEGPS(modem atmodem) {
-	log.Printf("Initializing modem GPS")
+	log.Printf("LTE - Initializing modem GPS")
 
 	//To configure:
 	// 1) Close any open GPS session
@@ -102,37 +108,37 @@ func initLTEGPS(modem atmodem) {
 	// 6) Enable data stream
 	_, err := atCommandExchange(modem, "AT+CGPS=0")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEAPORTCFG=3")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEA=197119")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEARATE=1")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPS=1")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSINFOCFG=1,31")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
 }
@@ -145,10 +151,10 @@ func updateLTEStatus(modem atmodem) {
 
 		data, err := atCommandExchange(modem, "AT+CSQ")
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			continue
 		}
-		csq_raw := strings.Split(data[0], ":")[1]
+		csq_raw := strings.Split(data[0], ": ")[1]
 		rssi_raw, err := strconv.ParseInt(strings.Split(csq_raw, ",")[0], 10, 16)
 
 		if rssi_raw ==0 {
@@ -167,18 +173,19 @@ func updateLTEStatus(modem atmodem) {
 
 		data, err = atCommandExchange(modem, "AT+COPS?")
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			continue
 		}
-		cops_raw := strings.Split(data[0], ":")[1]
-		globalStatus.LTE_Network = strings.Split(cops_raw, ",")[2]
+		cops_raw := strings.Split(data[0], ": ")[1]
+		cops_quoted := strings.Split(cops_raw, ",")[2]
+		globalStatus.LTE_Network = cops_quoted[1:len(cops_quoted)-1]
 
 		data, err = atCommandExchange(modem, "AT+CPSI?")
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			continue
 		}
-		cpsi_raw := strings.Split(data[0], ":")[1]
+		cpsi_raw := strings.Split(data[0], ": ")[1]
 		networkmode := strings.Split(cpsi_raw, ",")
 		globalStatus.LTE_Mode = fmt.Sprintf("%s - %s", networkmode[0], networkmode[1])
 	}
@@ -187,62 +194,74 @@ func updateLTEStatus(modem atmodem) {
 func configureModem(modem atmodem) {
 	data, err := atCommandExchange(modem, "AT+CICCID")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
-	globalStatus.LTE_ICCID = strings.Split(data[0], ":")[1]
+	globalStatus.LTE_ICCID = strings.Split(data[0], ": ")[1]
 
 	data, err = atCommandExchange(modem, "AT+CSPN?")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
-	spn_data := strings.Split(data[0], ":")[1]
-	globalStatus.LTE_SPN = strings.Split(spn_data, ",")[0]
+	spn_data := strings.Split(data[0], ": ")[1]
+	spn_quoted := strings.Split(spn_data, ",")[0]
+	globalStatus.LTE_SPN = spn_quoted[1:len(spn_quoted)-1]
 	
 	data, err = atCommandExchange(modem, "AT+SIMEI?")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
-	globalStatus.LTE_IMEI = strings.Split(data[0], ":")[1]
+	globalStatus.LTE_IMEI = strings.Split(data[0], ": ")[1]
 
 	data, err = atCommandExchange(modem, "AT+CUSBPIDSWITCH?")
 	if err != nil {
-		log.Printf("Modem AT error: %s\n", err.Error())
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return
 	}
-	pid_data := strings.Split(data[0], ":")[1]
+	pid_data := strings.Split(data[0], ": ")[1]
 	if pid_data != "9011" {
-		log.Printf("LTE Modem not in RNDIS mode, attempting to reconfigure")
+		log.Printf("LTE - LTE Modem not in RNDIS mode, attempting to reconfigure: \"%s\"\n", pid_data)
 
+		return
 		_, err = atCommandExchange(modem, "AT+CUSBPIDSWITCH=9011,1,1")
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			return
 		}
 
 		_, err = atCommandExchange(modem, fmt.Sprintf("AT+CGDCONT=1,\"IPV4V6\",\"%s\"",globalSettings.LTE_APN))
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			return
 		}
 
 		_, err = atCommandExchange(modem, fmt.Sprintf("AT+CGDCONT=6,\"IPV4V6\",\"%s\"",globalSettings.LTE_APN))
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			return
 		}
 
 		_, err = atCommandExchange(modem, "AT+CRESET")
 		if err != nil {
-			log.Printf("Modem AT error: %s\n", err.Error())
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
 			return
 		}
+
+		time.Sleep(5)
+		waitForBoot(modem)
 	}
 }
 
 func initLTE() {
+	globalStatus.LTE_Network = "N/A"
+	globalStatus.LTE_SignalStrength = "N/A"
+	globalStatus.LTE_Mode = "N/A"
+	globalStatus.LTE_ICCID = "N/A"
+	globalStatus.LTE_SPN = "N/A"
+	globalStatus.LTE_IMEI = "N/A"
+
 	if !globalSettings.LTE_Enabled {
 		return
 	}
@@ -250,7 +269,7 @@ func initLTE() {
 	//Wait for life
 	modem, err := waitForPort()
 	if err != nil {
-		log.Printf("Modem Initialization error: %s\n", err.Error())
+		log.Printf("LTE - Modem Initialization error: %s\n", err.Error())
 		return
 	}
 
