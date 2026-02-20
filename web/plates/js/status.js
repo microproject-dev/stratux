@@ -129,6 +129,9 @@ function StatusCtrl($rootScope, $scope, $state, $http, $interval, craftService) 
 				case 13:
 					tempGpsHardwareString = "SoftRF";
 					break;
+				case 14:
+					tempGpsHardwareString = "SIM7600X";
+					break;
 				case 15:
 					tempGpsHardwareString = "GxAirCom";
 					break;
@@ -183,6 +186,13 @@ function StatusCtrl($rootScope, $scope, $state, $http, $interval, craftService) 
 			} else {
 				// $('#CPUTemp').text('unavailable');
 			}
+
+			$scope.LTE_Network = status.LTE_Network
+			$scope.LTE_SignalStrength = status.LTE_SignalStrength
+			$scope.LTE_Mode = status.LTE_Mode
+			$scope.LTE_ICCID = status.LTE_ICCID
+			$scope.LTE_SPN = status.LTE_SPN
+			$scope.LTE_IMEI = status.LTE_IMEI
 
 			$scope.$apply(); // trigger any needed refreshing of data
 		};
@@ -252,6 +262,7 @@ function StatusCtrl($rootScope, $scope, $state, $http, $interval, craftService) 
 				$scope.visible_es = true;
 			}
 			$scope.visible_gps = settings.GPS_Enabled;
+			$scope.visible_lte = settings.LTE_Enabled;
 		}, function (response) {
 			// nop
 		});

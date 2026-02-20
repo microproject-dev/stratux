@@ -323,6 +323,9 @@ func handleRegionGet(w http.ResponseWriter, r *http.Request) {
 	case 2:
 		RegionSettings.IsSet = true
 		RegionSettings.Region = "EU"
+	case 3:
+		RegionSettings.IsSet = true
+		RegionSettings.Region = "Canada"
 	default:
 		RegionSettings.IsSet = false
 	}
@@ -366,8 +369,8 @@ func handleRegionSet(w http.ResponseWriter, r *http.Request) {
 							globalSettings.RegionSelected = 1
 						} else if val == "EU" {
 							globalSettings.RegionSelected = 2
-						} else {
-							globalSettings.RegionSelected = 0
+						} else if val == "Canada" {
+							globalSettings.RegionSelected = 3
 						}
 						changeRegionSettings()
 					default:
@@ -430,6 +433,14 @@ func handleSettingsSetRequest(w http.ResponseWriter, r *http.Request) {
 						globalSettings.OGNI2CTXEnabled = val.(bool)
 					case "GPS_Enabled":
 						globalSettings.GPS_Enabled = val.(bool)
+					case "GpsManualConfig":
+						globalSettings.GpsManualConfig = val.(bool)
+					case "GpsManualDevice":
+						globalSettings.GpsManualDevice = val.(string)
+					case "GpsManualChip":
+						globalSettings.GpsManualChip = val.(string)
+					case "GpsManualTargetBaud":
+						globalSettings.GpsManualTargetBaud = int(val.(float64))
 					case "IMU_Sensor_Enabled":
 						globalSettings.IMU_Sensor_Enabled = val.(bool)
 						if !globalSettings.IMU_Sensor_Enabled && globalStatus.IMUConnected {
@@ -584,9 +595,13 @@ func handleSettingsSetRequest(w http.ResponseWriter, r *http.Request) {
 					case "PWMDutyMin":
 						globalSettings.PWMDutyMin = int(val.(float64))
 						reconfigureFancontrol = true
+					case "LTE_Enabled":
+						globalSettings.LTE_Enabled = val.(bool)
+					case "LTE_APN":
+						globalSettings.LTE_APN = val.(string)
 
 					default:
-						log.Printf("handleSettingsSetRequest:json: unrecognized key:%s\n", key)
+						log.Printf("handleSettingsSetRequest:json: unrecognized key: \"%s\"\n", key)
 					}
 				}
 				saveSettings()

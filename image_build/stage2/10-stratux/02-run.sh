@@ -13,6 +13,8 @@ on_chroot << EOF
     # needed for dump1090
     apt install -y libncurses6 
     dpkg -i /tmp/${DEB_NAME}
+    apt install -y screen
+    apt install -y iptables
 EOF
 
 # remove the dpkg file from tmp

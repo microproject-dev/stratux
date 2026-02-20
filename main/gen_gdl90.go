@@ -110,6 +110,7 @@ const (
 	GPS_TYPE_SOFTRF_DONGLE 	= 11	// 0x0B
 	GPS_TYPE_NETWORK    = 12		// 0x0C
 	GPS_TYPE_SOFTRF     = 13
+	GPS_TYPE_SIM7600X	= 14
 	GPS_TYPE_GXAIRCOM   = 15		// 0x0F
 	
 
@@ -1230,6 +1231,9 @@ type settings struct {
 	WiFiClientNetworks   []wifiClientNetwork
 	WiFiInternetPassThroughEnabled bool
 
+	LTE_Enabled			 bool
+	LTE_APN        		 string
+
 	EstimateBearinglessDist bool
 	RadarLimits          int
 	RadarRange           int
@@ -1317,6 +1321,13 @@ type status struct {
 
 	OGNPrevRandomAddr                          string    // when OGN is in random stealth mode, it's ID changes randomly - keep the previous one so we can filter properly
 	Pong_Heartbeats                            int64     // Pong heartbeat counter
+
+	LTE_Network								   string
+	LTE_SignalStrength						   string
+	LTE_Mode								   string
+	LTE_ICCID								   string
+	LTE_SPN									   string
+	LTE_IMEI								   string
 }
 
 var globalSettings settings
@@ -1477,6 +1488,10 @@ func changeRegionSettings() {
 			globalSettings.UAT_Enabled = false
 			globalSettings.OGN_Enabled = true
 			globalSettings.DeveloperMode = true
+		case 3: // Canada settings
+			globalSettings.UAT_Enabled = false
+			globalSettings.OGN_Enabled = false
+			globalSettings.DeveloperMode = false
 		default:	// Nothing selected
 
 	}
@@ -1826,6 +1841,9 @@ func main() {
 	// Guesses barometric altitude if we don't have our own baro source by using GnssBaroDiff from other traffic at similar altitude
 	go baroAltGuesser()
 	go cotListen()
+
+	// Initialize LTE modem
+	initLTE()
 
 	// Monitor RPi CPU temp.
 	globalStatus.CPUTempMin = common.InvalidCpuTemp

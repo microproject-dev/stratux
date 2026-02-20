@@ -1,5 +1,5 @@
 dhcp-range={{.DhcpRangeStart}},{{.DhcpRangeEnd}},24h
-{{if and .WiFiInternetPassThroughEnabled (eq .WiFiMode 2)}}
+{{if and .WiFiInternetPassThroughEnabled (or (eq .WiFiMode 2) (eq .WiFiMode 3))}}
 dhcp-option=3,{{.IpAddr}}
 dhcp-option=6,{{.IpAddr}}
 {{else}}

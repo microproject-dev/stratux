@@ -260,8 +260,8 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 
 	$scope.$parent.helppage = 'plates/settings-help.html';
 
-	var toggles = ['UAT_Enabled', 'ES_Enabled', 'OGN_Enabled', 'AIS_Enabled', 'APRS_Enabled', 'Ping_Enabled', 'Pong_Enabled', 'OGNI2CTXEnabled', 'GPS_Enabled', 'IMU_Sensor_Enabled',
-		'BMP_Sensor_Enabled', 'DisplayTrafficSource', 'DEBUG', 'ReplayLog', 'TraceLog', 'AHRSLog', 'PersistentLogging', 'GDL90MSLAlt_Enabled', 'EstimateBearinglessDist', 'DarkMode'];
+	var toggles = ['UAT_Enabled', 'ES_Enabled', 'OGN_Enabled', 'AIS_Enabled', 'APRS_Enabled', 'Ping_Enabled', 'Pong_Enabled', 'OGNI2CTXEnabled', 'GPS_Enabled', 'GpsManualConfig', 'IMU_Sensor_Enabled',
+		'BMP_Sensor_Enabled', 'DisplayTrafficSource', 'DEBUG', 'ReplayLog', 'TraceLog', 'AHRSLog', 'PersistentLogging', 'GDL90MSLAlt_Enabled', 'EstimateBearinglessDist', 'DarkMode', 'LTE_Enabled'];
 
 	var settings = {};
 	for (var i = 0; i < toggles.length; i++) {
@@ -299,6 +299,12 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 		$scope.Ping_Enabled = settings.Ping_Enabled;
 		$scope.Pong_Enabled = settings.Pong_Enabled;
 		$scope.GPS_Enabled = settings.GPS_Enabled;
+		$scope.GpsManualConfig = settings.GpsManualConfig;
+		$scope.GpsManualDevice = settings.GpsManualDevice;
+		$scope.GpsManualChips = ['ublox6', 'ublox7', 'ublox8', 'ublox9', 'ublox10', 'ublox', 'sim7600x', 'other'];
+		$scope.GpsManualChip = settings.GpsManualChip;
+		$scope.GpsManualTargetBauds = [9600, 115200, 19200, 38400, 57600, 230400, 460800, 921600];
+		$scope.GpsManualTargetBaud = settings.GpsManualTargetBaud;
 		$scope.OGNI2CTXEnabled = settings.OGNI2CTXEnabled;
 
 		$scope.IMU_Sensor_Enabled = settings.IMU_Sensor_Enabled;
@@ -344,6 +350,9 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 		$scope.OGNTxPower = settings.OGNTxPower;
 
 		$scope.PWMDutyMin = settings.PWMDutyMin;
+
+		$scope.LTE_Enabled = settings.LTE_Enabled;
+		$scope.LTE_APN = settings.LTE_APN;
 
 		// Update theme
 		$scope.$parent.updateTheme($scope.DarkMode);
@@ -505,6 +514,54 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 			settings["GLimits"] = $scope.GLimits;
 			var newsettings = {
 				"GLimits": settings["GLimits"]
+			};
+			// console.log(angular.toJson(newsettings));
+			setSettings(angular.toJson(newsettings));
+		}
+	};
+
+	$scope.updateGPSDevice = function () {
+		settings["GpsManualDevice"] = 0;
+		if ($scope.GpsManualDevice !== settings["GpsManualDevice"]) {
+			settings["GpsManualDevice"] = $scope.GpsManualDevice;
+			var newsettings = {
+				"GpsManualDevice": settings["GpsManualDevice"]
+			};
+			// console.log(angular.toJson(newsettings));
+			setSettings(angular.toJson(newsettings));
+		}
+	};
+
+	$scope.updateGPSChip = function () {
+		settings["GpsManualChip"] = 0;
+		if ($scope.GpsManualChip !== settings["GpsManualChip"]) {
+			settings["GpsManualChip"] = $scope.GpsManualChip;
+			var newsettings = {
+				"GpsManualChip": settings["GpsManualChip"]
+			};
+			// console.log(angular.toJson(newsettings));
+			setSettings(angular.toJson(newsettings));
+		}
+	};
+
+	$scope.updateGPSBaud = function () {
+		settings["GpsManualTargetBaud"] = 0;
+		if ($scope.GpsManualTargetBaud !== settings["GpsManualTargetBaud"]) {
+			settings["GpsManualTargetBaud"] = parseInt($scope.GpsManualTargetBaud);
+			var newsettings = {
+				"GpsManualTargetBaud": settings["GpsManualTargetBaud"]
+			};
+			// console.log(angular.toJson(newsettings));
+			setSettings(angular.toJson(newsettings));
+		}
+	};
+
+	$scope.updateLTEAPN = function () {
+		settings["LTE_APN"] = 0;
+		if ($scope.GpsManualTargetBaud !== settings["LTE_APN"]) {
+			settings["LTE_APN"] = $scope.LTE_APN;
+			var newsettings = {
+				"LTE_APN": settings["LTE_APN"]
 			};
 			// console.log(angular.toJson(newsettings));
 			setSettings(angular.toJson(newsettings));
@@ -690,7 +747,7 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 				"WiFiMode" : parseInt($scope.WiFiMode),
 				"WiFiDirectPin": $scope.WiFiDirectPin,
 				"WiFiClientNetworks": $scope.WiFiClientNetworks,
-				"WiFiInternetPassThroughEnabled": $scope.WiFiInternetPassThroughEnabled
+				"WiFiInternetPassThroughEnabled": $scope.WiFiInternetPassThroughEnabled,
 			};
 
 			// console.log(angular.toJson(newsettings));
@@ -706,6 +763,7 @@ function SettingsCtrl($rootScope, $scope, $state, $location, $window, $http) {
 			case 0: return "AP";
 			case 1: return "WiFi-Direct";
 			case 2: return "AP+Client";
+			case 3: return "AP+LTE";
 		}
 		return "???";
 	}

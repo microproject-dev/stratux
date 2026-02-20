@@ -263,6 +263,7 @@
                                 <option value="0" ng-selected="WiFiMode=='0'">AccessPoint</option>
                                 <option value="1" ng-selected="WiFiMode=='1'">WiFi-Direct</option>
                                 <option value="2" ng-selected="WiFiMode=='2'">AP+Client</option>
+                                <option ng-if="LTE_Enabled" value="3" ng-selected="WiFiMode=='3'">AP+LTE</option>
                             </select>
                         </div>
                         <div class="form-group reset-flow">
@@ -303,7 +304,7 @@
                             <input class="col-xs-7" type="text" ip-addr-input ng-model="WiFiIPAddress"
                                 placeholder="192.168.10.1" />
                         </div>
-                        <div class="form-group reset-flow" ng-show="WiFiMode=='2'">
+                        <div class="form-group reset-flow" ng-show="(WiFiMode=='2' || WiFiMode=='3')">
                             <label class="control-label col-xs-5">Internet Passthrough</label>
                             <div class="col-xs-5">
                                 <ui-switch ng-model="WiFiInternetPassThroughEnabled" settings-change></ui-switch>
@@ -332,7 +333,6 @@
                             </div>
                             <hr>
                         </div>
-
                         <div class="form-group reset-flow">
                             <button class="btn btn-primary btn-block" ng-click="updateWiFi()">Submit WiFi
                                 Changes</button>
@@ -359,7 +359,27 @@
                             <ui-switch ng-model='GPS_Enabled' settings-change></ui-switch>
                         </div>
                     </div>
-
+                    <div class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Manual Config</label>
+                        <div class="col-xs-7">
+                            <ui-switch ng-model='GpsManualConfig' settings-change></ui-switch>
+                        </div>
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Device</label>
+                        <input class="col-xs-7" type="text" ng-model="GpsManualDevice" ng-blur="updateGPSDevice()"
+                            placeholder="/dev/ttyAMA0" />
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Chipset</label>
+                        <select id="GpsManualChip" class="input col-xs-7 form-control-sm" ng-model="GpsManualChip"
+                            ng-options="x for x in GpsManualChips" ng-blur="updateGPSChip()"></select>
+                    </div>
+                    <div ng-show="GpsManualConfig" class="form-group reset-flow">
+                        <label class="control-label col-xs-5">GPS Target Baud</label>
+                        <select id="GpsManualTargetBaud" class="input col-xs-7 form-control-sm" ng-model="GpsManualTargetBaud"
+                            ng-options="x for x in GpsManualTargetBauds" ng-blur="updateGPSBaud()"></select>
+                    </div>
                     <div class="form-group reset-flow">
                         <label class="control-label col-xs-5">978 Mhz (UAT)</label>
                         <div class="col-xs-7">
@@ -431,6 +451,18 @@
                         <label class="control-label col-xs-5">OGN Transmission via I&#178;C/GPIO HAT</label>
                         <div class="col-xs-7">
                             <ui-switch ng-model='OGNI2CTXEnabled' settings-change></ui-switch>
+                        </div>
+                    </div>
+                    <div class="form-group reset-flow">
+                        <label class="control-label col-xs-5">LTE Baseband</label>
+                        <div class="col-xs-7">
+                            <ui-switch ng-model='LTE_Enabled' settings-change></ui-switch>
+                        </div>
+                    </div>
+                    <div ng-show="LTE_Enabled">
+                        <div class="form-group reset-flow">
+                            <label class="control-label col-xs-5">LTE APN</label>
+                            <input class="col-xs-7" type="text" ng-model="LTE_APN" ng-blur="updateLTEAPN()"/>
                         </div>
                     </div>
 
