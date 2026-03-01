@@ -72,7 +72,10 @@ if [ -e ${PACKAGE_UPDATE_LOCATION} ]; then
 	if [ -n ${UPDATE_PACKAGE_FILE} ] ; then
 		# Install the new packagepackage, remove it, then reboot.
 		wLog "Installing update package ${UPDATE_PACKAGE_FILE}..."
+		# Need to unlock the overlay so the update works
+		/sbin/overlayctl unlock
 		bash dpkg -i ${UPDATE_PACKAGE_FILE}
+		/sbin/overlayctl lock
 		wLog "Removing Update Package"
 		rm -f ${UPDATE_PACKAGE_FILE}
 		wLog "Finished... Rebooting... Bye"
