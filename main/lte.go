@@ -96,7 +96,7 @@ func waitForBoot(modem atmodem) {
 	log.Printf("LTE - Modem online")
 }
 
-func initLTEGPS(modem atmodem) {
+func initLTEGPS(modem atmodem) error {
 	log.Printf("LTE - Initializing modem GPS")
 
 	//To configure:
@@ -109,38 +109,40 @@ func initLTEGPS(modem atmodem) {
 	_, err := atCommandExchange(modem, "AT+CGPS=0")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEAPORTCFG=3")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEA=197119")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSNMEARATE=1")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPS=1")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 
 	_, err = atCommandExchange(modem, "AT+CGPSINFOCFG=1,31")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
+
+	return nil
 }
 
 func updateLTEStatus(modem atmodem) {
@@ -191,18 +193,18 @@ func updateLTEStatus(modem atmodem) {
 	}
 }
 
-func configureModem(modem atmodem) {
+func configureModem(modem atmodem) error {
 	data, err := atCommandExchange(modem, "AT+CICCID")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 	globalStatus.LTE_ICCID = strings.Split(data[0], ": ")[1]
 
 	data, err = atCommandExchange(modem, "AT+CSPN?")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 	spn_data := strings.Split(data[0], ": ")[1]
 	spn_quoted := strings.Split(spn_data, ",")[0]
@@ -211,47 +213,48 @@ func configureModem(modem atmodem) {
 	data, err = atCommandExchange(modem, "AT+SIMEI?")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 	globalStatus.LTE_IMEI = strings.Split(data[0], ": ")[1]
 
 	data, err = atCommandExchange(modem, "AT+CUSBPIDSWITCH?")
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return
+		return err
 	}
 	pid_data := strings.Split(data[0], ": ")[1]
 	if pid_data != "9011" {
 		log.Printf("LTE - LTE Modem not in RNDIS mode, attempting to reconfigure: \"%s\"\n", pid_data)
 
-		return
 		_, err = atCommandExchange(modem, "AT+CUSBPIDSWITCH=9011,1,1")
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			return
+			return err
 		}
 
 		_, err = atCommandExchange(modem, fmt.Sprintf("AT+CGDCONT=1,\"IPV4V6\",\"%s\"",globalSettings.LTE_APN))
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			return
+			return err
 		}
 
 		_, err = atCommandExchange(modem, fmt.Sprintf("AT+CGDCONT=6,\"IPV4V6\",\"%s\"",globalSettings.LTE_APN))
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			return
+			return err
 		}
 
 		_, err = atCommandExchange(modem, "AT+CRESET")
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			return
+			return err
 		}
 
 		time.Sleep(5)
 		waitForBoot(modem)
 	}
+
+	return nil
 }
 
 func initLTE() {
@@ -273,14 +276,39 @@ func initLTE() {
 		return
 	}
 
-	waitForBoot(modem)
+	configured := false
+	gpsInit := false
 
-	//Check initial configuration for RNDIS
-	//Reconfigure if needed
-	configureModem(modem)
+	timer := time.NewTicker(2 * time.Second)
 
-	//Initialize the GPS
-	initLTEGPS(modem)
+	// Loop and try to configure the modem. We should only get here if there appears
+	// to be a modem port. The configuration could fail, so we will keep trying if
+	// it does.
+	for (!configured && !gpsInit) {
+		<- timer.C
+
+		waitForBoot(modem)
+		//Check initial configuration for RNDIS
+		//Reconfigure if needed
+		if (!configured) {
+			err := configureModem(modem)
+			if err == nil {
+				configured = true
+			} else {
+				continue
+			}
+		}
+
+		if (!gpsInit) {
+			//Initialize the GPS
+			err := initLTEGPS(modem)
+			if err == nil {
+				gpsInit = true
+			} else {
+				continue
+			}
+		}
+	}
 
 	//Initialize the status reporting
 	go updateLTEStatus(modem)
