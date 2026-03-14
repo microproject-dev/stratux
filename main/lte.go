@@ -18,6 +18,7 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
+	"regexp"
 
 	"github.com/tarm/serial"
 )
@@ -73,9 +74,55 @@ func atCommandExchange(modem atmodem, cmdstring string) ([]string, error) {
 	}
 	if err := modem.scanner.Err(); err != nil {
 		log.Printf("LTE -  Error reading modem: %s\n", err.Error())
-		return data, errors.New("modem read error")
+		return nil, errors.New("modem read error")
 	}
-	return data, errors.New("modem exchange unknown termination")
+	return nil, errors.New("modem exchange unknown termination")
+}
+
+func atCommandExchange_retry(modem atmodem, cmdstring string, retry int) ([]string, error) {
+	for cnt := 0; cnt < retry; cnt++ {
+		date, err := atCommandExchange(modem, cmdstring)
+		if err != nil {
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
+			continue
+		} else {
+			return date, nil
+		}
+	}
+	return nil, errors.New("LTE - Modem AT errors on retry\n")
+}
+
+func atCommandExchangeMatch(modem atmodem, cmdstring string, regex *regexp.Regexp) ([]string, error) {
+	data, err := atCommandExchange(modem, cmdstring)
+	if err != nil {
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
+		return nil, err
+	}
+	if len(data) >= 1 {
+		matches := regex.FindStringSubmatch(data[0])
+		if matches != nil {
+			return matches, nil
+		} else {
+			log.Printf("LTE - return \"%s\" could not be matched\n", data[0])	
+			return nil, errors.New("LTE - Could not match data from command")
+		}
+	} else {
+		log.Printf("LTE - %s returned 0 length\n", cmdstring)
+		return nil, errors.New("LTE - No data returned from command")
+	}
+}
+
+func atCommandExchangeMatch_retry(modem atmodem, cmdstring string, regex *regexp.Regexp, retry int) ([]string, error) {
+	for cnt := 0; cnt < retry; cnt++ {
+		matches, err := atCommandExchangeMatch(modem, cmdstring, regex)
+		if err != nil {
+			log.Printf("LTE - Modem AT error: %s\n", err.Error())
+			continue
+		} else {
+			return matches, nil
+		}
+	}
+	return nil, errors.New("LTE - Modem AT errors on retry\n")
 }
 
 func waitForBoot(modem atmodem) {
@@ -148,81 +195,93 @@ func initLTEGPS(modem atmodem) error {
 func updateLTEStatus(modem atmodem) {
 	timer := time.NewTicker(10 * time.Second)
 
+	reCSQ := regexp.MustCompile(`\+CSQ: (\d+),(\d+)`)
+	reCOPS := regexp.MustCompile(`\+COPS: (\d+),(\d+),"(\S+)",(\d+)`)
+	reCPSI := regexp.MustCompile(`\+CPSI: (\S+),(\S+),\S+,\S+,\S+,\S+,\S+,\S+,\S+,\S+,\S+,\S+,\S+,\S+`)
+
 	for {
 		<- timer.C
 
-		data, err := atCommandExchange(modem, "AT+CSQ")
+		matches, err := atCommandExchangeMatch(modem, "AT+CSQ", reCSQ)
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			continue
 		}
-		csq_raw := strings.Split(data[0], ": ")[1]
-		rssi_raw, err := strconv.ParseInt(strings.Split(csq_raw, ",")[0], 10, 16)
+		if matches != nil {
+			rssi_raw, err := strconv.ParseInt(matches[1], 10, 16)
+			if err != nil {
+				log.Printf("LTE - Modem could not parse to int: \"%s\", %s\n", matches[1], err.Error())
+			} else {
+				if rssi_raw == 0 {
+					globalStatus.LTE_SignalStrength = "<-113"
+				} else if rssi_raw < 31 {
+					globalStatus.LTE_SignalStrength = fmt.Sprintf("%d", -113 + rssi_raw * 2)
+				} else if rssi_raw == 31 {
+					globalStatus.LTE_SignalStrength = ">-51"
+				} else if rssi_raw > 99 && rssi_raw < 191 {
+					globalStatus.LTE_SignalStrength = fmt.Sprintf("%d", -116 + rssi_raw)
+				} else if rssi_raw == 191 {
+					globalStatus.LTE_SignalStrength = ">-25"
+				} else if rssi_raw == 99 || rssi_raw == 199 {
+					globalStatus.LTE_SignalStrength = "Unknown"
+				} else {
+					log.Printf("LTE - Modem unexpected signal strength: %d\n", rssi_raw)
+				}
+			}
+		}
 
-		if rssi_raw ==0 {
-			globalStatus.LTE_SignalStrength = "<-113"
-		} else if rssi_raw < 31 {
-			globalStatus.LTE_SignalStrength = fmt.Sprintf("%d", -113 + rssi_raw * 2)
-		} else if rssi_raw == 31 {
-			globalStatus.LTE_SignalStrength = ">-51"
-		} else if rssi_raw > 99 && rssi_raw < 191 {
-			globalStatus.LTE_SignalStrength = fmt.Sprintf("%d", -116 + rssi_raw)
-		} else if rssi_raw == 191 {
-			globalStatus.LTE_SignalStrength = ">-25"
-		} else if rssi_raw == 99 || rssi_raw == 199 {
-			globalStatus.LTE_SignalStrength = "Unknown"
-		} 
-
-		data, err = atCommandExchange(modem, "AT+COPS?")
+		matches, err = atCommandExchangeMatch(modem, "AT+COPS?", reCOPS)
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			continue
 		}
-		cops_raw := strings.Split(data[0], ": ")[1]
-		cops_quoted := strings.Split(cops_raw, ",")[2]
-		globalStatus.LTE_Network = cops_quoted[1:len(cops_quoted)-1]
+		if matches != nil {
+			// If the re matches, then it must have all the results
+			globalStatus.LTE_Network = matches[3]
+		}
 
-		data, err = atCommandExchange(modem, "AT+CPSI?")
+		matches, err = atCommandExchangeMatch(modem, "AT+CPSI?", reCPSI)
 		if err != nil {
 			log.Printf("LTE - Modem AT error: %s\n", err.Error())
-			continue
 		}
-		cpsi_raw := strings.Split(data[0], ": ")[1]
-		networkmode := strings.Split(cpsi_raw, ",")
-		globalStatus.LTE_Mode = fmt.Sprintf("%s - %s", networkmode[0], networkmode[1])
+		if (matches != nil) {
+			// If the re matches, then it must have all the results
+			globalStatus.LTE_Mode = fmt.Sprintf("%s - %s", matches[1], matches[2])
+		}
 	}
 }
 
 func configureModem(modem atmodem) error {
-	data, err := atCommandExchange(modem, "AT+CICCID")
-	if err != nil {
-		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return err
-	}
-	globalStatus.LTE_ICCID = strings.Split(data[0], ": ")[1]
-
-	data, err = atCommandExchange(modem, "AT+CSPN?")
-	if err != nil {
-		log.Printf("LTE - Modem AT error: %s\n", err.Error())
-		return err
-	}
-	spn_data := strings.Split(data[0], ": ")[1]
-	spn_quoted := strings.Split(spn_data, ",")[0]
-	globalStatus.LTE_SPN = spn_quoted[1:len(spn_quoted)-1]
+	reCICCID := regexp.MustCompile(`\+ICCID: (\d{20})`)
+	reCSPN := regexp.MustCompile(`\+CSPN: "(\S*)",\S+`)
+	reSIMEI := regexp.MustCompile(`\+SIMEI: (\d{15})`)
+	reCUSBPIDSWITCH := regexp.MustCompile(`\+CUSBPIDSWITCH: (\S+)`)
 	
-	data, err = atCommandExchange(modem, "AT+SIMEI?")
+	matches, err := atCommandExchangeMatch(modem, "AT+CICCID", reCICCID)
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return err
 	}
-	globalStatus.LTE_IMEI = strings.Split(data[0], ": ")[1]
+	globalStatus.LTE_ICCID = matches[1]
 
-	data, err = atCommandExchange(modem, "AT+CUSBPIDSWITCH?")
+	matches, err = atCommandExchangeMatch(modem, "AT+CSPN?", reCSPN)
 	if err != nil {
 		log.Printf("LTE - Modem AT error: %s\n", err.Error())
 		return err
 	}
-	pid_data := strings.Split(data[0], ": ")[1]
+	globalStatus.LTE_SPN = matches[1]
+	
+	matches, err = atCommandExchangeMatch(modem, "AT+SIMEI?", reSIMEI)
+	if err != nil {
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
+		return err
+	}
+	globalStatus.LTE_IMEI = matches[1]
+
+	matches, err = atCommandExchangeMatch(modem, "AT+CUSBPIDSWITCH?", reCUSBPIDSWITCH)
+	if err != nil {
+		log.Printf("LTE - Modem AT error: %s\n", err.Error())
+		return err
+	}
+	pid_data := matches[1]
 	if pid_data != "9011" {
 		log.Printf("LTE - LTE Modem not in RNDIS mode, attempting to reconfigure: \"%s\"\n", pid_data)
 
