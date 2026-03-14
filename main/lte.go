@@ -284,7 +284,7 @@ func initLTE() {
 	// Loop and try to configure the modem. We should only get here if there appears
 	// to be a modem port. The configuration could fail, so we will keep trying if
 	// it does.
-	for (!configured && !gpsInit) {
+	for (!(configured && gpsInit)) {
 		<- timer.C
 
 		waitForBoot(modem)
